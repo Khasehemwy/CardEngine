@@ -11,6 +11,10 @@ using std::queue;
 using std::string;
 #include<map>
 using std::map;
+#include<thread>
+using std::thread;
+#include<mutex>
+using std::mutex;
 
 #include"SDL.h"
 #include"SDL_image.h"

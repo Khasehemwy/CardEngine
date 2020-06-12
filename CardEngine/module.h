@@ -1,28 +1,46 @@
 #pragma once
 
 
-
 class Image;
 class Text;
 class SystemModule;
 class UserModule;
 class GameModule;
+class RenderObject;
+class ResourcesModule;
 
-//map<string, void*>Resources;
+static map<const char*, ResourcesModule*>Resources;
+static map<const char*, RenderObject*>renderedTexture;
+
+
+class ResourcesModule
+{
+public:
+	void* object;
+	const char* kind;
+};
+
+class RenderObject
+{
+public:
+	SDL_Surface* pSurface;
+	SDL_Texture* pTexture;
+	SDL_Rect* pRect;
+};
 
 //图像模块，渲染图片
 class Image
 {
 private:
-	const SDL_Surface* imageSurface;
-	const SDL_Texture* imageTexture;
+	SDL_Surface* imageSurface;
 public:	
 	string imageName;				//图片文件名称
 	SDL_Rect imageRect;				//图片位置和大小
 	unsigned int imageAlpha;		//图片透明度
 
-	const SDL_Texture* GetTexture();
-	const SDL_Surface* GetSurface();
+	Image(SDL_Surface*);
+
+	SDL_Surface* GetSurface();
 };
 
 
@@ -39,6 +57,7 @@ public:
 //FPS模块
 class FPS :public Text
 {
+public:
 	unsigned int value;				//FPS数值
 };
 
@@ -50,6 +69,7 @@ private:
 	HINSTANCE hInstance;			//应用实例句柄
 	SDL_Window* pWindow;			//窗口指针
 	SDL_Renderer* pRenderer;		//渲染指针
+	SDL_Renderer* pRendererForRun;
 	TTF_Font* pDefaultFont;			//默认字体指针
 	SDL_Event event;
 
@@ -58,8 +78,10 @@ public:
 
 	int SetWindow(SDL_Window*);
 	int SetRenderer(SDL_Renderer*);
+	int SetRendererForRun(SDL_Renderer*);
 	int SetFont(TTF_Font*);
 	SDL_Window* GetWindow();
+	SDL_Renderer* GetRendererForRun();
 	SDL_Renderer* GetRenderer();
 	TTF_Font* GetDefaultFont();
 	SDL_Event* GetEvent();
@@ -70,14 +92,12 @@ public:
 class UserModule
 {
 public:
-	string title;					//窗口标题
+	const char* title;				//窗口标题
 	SIZE windowSize;				//窗口大小
-	FPS FPS;						//FPS帧率
-	BOOL showFPS;					//是否显示FPS
+	//FPS FPS;						//FPS帧率
+	//BOOL showFPS;					//是否显示FPS
 
-	UserModule() :
-		title((string)"Game"+(string)CardEngine)
-	{}
+	UserModule();
 };
 
 

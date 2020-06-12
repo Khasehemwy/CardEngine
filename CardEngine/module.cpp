@@ -25,6 +25,12 @@ int SystemModule::SetRenderer(SDL_Renderer* pRenderer)
 	if (this->pRenderer == NULL) { return -1; }
 	return 0;
 }
+int SystemModule::SetRendererForRun(SDL_Renderer* pRenderer)
+{
+	this->pRendererForRun = pRenderer;
+	if (this->pRendererForRun == NULL) { return -1; }
+	return 0;
+}
 
 //初始化默认字体
 int SystemModule::SetFont(TTF_Font* pFont)
@@ -47,6 +53,10 @@ SDL_Renderer* SystemModule::GetRenderer()
 {
 	return this->pRenderer;
 }
+SDL_Renderer* SystemModule::GetRendererForRun()
+{
+	return this->pRendererForRun;
+}
 TTF_Font* SystemModule::GetDefaultFont()
 {
 	return this->pDefaultFont;
@@ -54,18 +64,25 @@ TTF_Font* SystemModule::GetDefaultFont()
 
 
 /*-------用户模块-------*/
+UserModule::UserModule():
+	title("Game"  _CardEngine)
+{
 
+}
 
 
 
 
 
 /*-------图片模块-------*/
-const SDL_Texture* Image::GetTexture()
+Image::Image(SDL_Surface* pSurface) :imageSurface(pSurface)
 {
-	return this->imageTexture;
+	this->imageAlpha = 255;
 }
-const SDL_Surface* Image::GetSurface()
+
+
+
+SDL_Surface* Image::GetSurface()
 {
 	return this->imageSurface;
 }

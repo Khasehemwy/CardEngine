@@ -6,6 +6,9 @@
 #define SetWindowText  SetWindowTextA
 #endif
 
-#define DefaultTitle "CardEngine"
-#define CardEngine "-CardEngine"
-#define DefaultFontSize 24
+#define _DefaultTitle "CardEngine"
+#define _CardEngine "-CardEngine"
+#define _DefaultFontSize 24
+
+
+#define _Image "IMAGE" 

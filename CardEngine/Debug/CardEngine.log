@@ -1,7 +1,2 @@
-﻿  function.cpp
-D:\OneDrive\Projects\CardEngine\CardEngine\function.cpp(19,33): warning C4244: “参数”: 从“double”转换到“int”，可能丢失数据
-D:\OneDrive\Projects\CardEngine\CardEngine\function.cpp(19,15): warning C4244: “参数”: 从“double”转换到“int”，可能丢失数据
-  module.cpp
-  test.cpp
-  正在生成代码...
+﻿  test.cpp
   CardEngine.vcxproj -> D:\OneDrive\Projects\CardEngine\Debug\CardEngine.exe
