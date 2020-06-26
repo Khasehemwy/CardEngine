@@ -1,2 +1,4 @@
 ﻿  test.cpp
+D:\OneDrive\Projects\CardEngine\CardEngine\module.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+D:\OneDrive\Projects\CardEngine\CardEngine\function.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
   CardEngine.vcxproj -> D:\OneDrive\Projects\CardEngine\Debug\CardEngine.exe

@@ -6,9 +6,13 @@
 #define SetWindowText  SetWindowTextA
 #endif
 
-#define _DefaultTitle "CardEngine"
-#define _CardEngine "-CardEngine"
-#define _DefaultFontSize 24
+#define _Card_DefaultTitle "CardEngine"
+#define _Card_CardEngine "-CardEngine"
+#define _Card_DefaultFontSize 24
 
 
-#define _Image "IMAGE" 
+#define _Card_GameObject 1
+#define _Card_Image 2
+
+#define _Card_DatumPoint_UpperLeft 1
+#define _Card_DatumPoint_BottomLeft 2

@@ -2,15 +2,83 @@
 
 #include"includes.h"
 
+
+static map<const char*, ResourcesModule*>Resources;
+static map<const char*, RenderObject*>renderedTexture;
+
+static SDL_Event Card_GetEvent_Event;
+
+/*-------引擎系统-------*/
+
+//系统自动处理
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+	//初始化引擎
+	GameModule* pGame = Card_Initial(hInstance);
+	
+	Card_Start(pGame);
+	//创建多线程
+	thread userThread(Card_UpdateSystem, pGame);
+	userThread.detach();
+
+
+	//处理事件
+	Card_Run(pGame);
+
+	return 0;
+}
+
+
+//重复执行的更新函数
+void Card_UpdateSystem(GameModule* pGame)
+{
+	auto beforeTimePoint = std::chrono::steady_clock::now();
+	auto nowTimePoint = beforeTimePoint;
+	std::chrono::duration<double> timeInterval;
+
+	while (1) {
+		nowTimePoint = std::chrono::steady_clock::now();
+		timeInterval = nowTimePoint - beforeTimePoint;
+
+		//限制帧率
+		if (timeInterval >= pGame->FPS.interval) {
+			beforeTimePoint = nowTimePoint;
+
+			Card_Update(pGame);
+		}
+	}
+}
+
+//计时器
+int Card_Delay()
+{
+	return 0;
+}
+int Card_Repeat()
+{
+	return 0;
+}
+
+
+//事件返回
+SDL_Event* Card_GetEvent()
+{
+	return &Card_GetEvent_Event;
+}
+
+
+
+
+/*-------初始化-------*/
 GameModule* Card_Initial(HINSTANCE hInstance)
 {
 	static GameModule game;
 
-	//��ʼ��SDL
+	//初始化SDL
 	auto ret = SDL_Init(SDL_INIT_EVERYTHING);
 	if (ret < 0) { Card_HandleError(); }
 
-	//��ʼ������(Window)
+	//初始化窗口(Window)
 	SDL_Rect rectWindow;
 	SDL_GetDisplayBounds(0, &rectWindow);
 	ret = game.system.SetWindow(SDL_CreateWindow(
@@ -23,7 +91,7 @@ GameModule* Card_Initial(HINSTANCE hInstance)
 	game.windowSize = { (LONG)(rectWindow.w * 0.6),(LONG)(rectWindow.h * 0.6) };
 	if (ret < 0) { Card_HandleError(); }
 
-	//��ʼ����Ⱦ��(Renderer)
+	//初始化渲染(Renderer)
 	ret = game.system.SetRenderer(SDL_CreateRenderer(
 		game.system.GetWindow(),
 		-1,
@@ -31,10 +99,10 @@ GameModule* Card_Initial(HINSTANCE hInstance)
 	));
 	if (ret < 0) { Card_HandleError(); }
 
-	//��ʼ��Ĭ������
+	//初始化字体
 	TTF_Init();
 	ret = game.system.SetFont(TTF_OpenFont(
-		"system\\defaultFont.ttf", _DefaultFontSize
+		"system\\defaultFont.ttf", _Card_DefaultFontSize
 	));
 	if (ret < 0) { Card_HandleError(); }
 
@@ -42,48 +110,63 @@ GameModule* Card_Initial(HINSTANCE hInstance)
 	return &game;
 }
 
+
+/*-------事件处理-------*/
 void Card_HandleEvent(GameModule* pGame)
 {
-	//mutex tmpMutex;
+	auto beforeTimePoint = std::chrono::steady_clock::now();
+	auto nowTimePoint = beforeTimePoint;
+	std::chrono::duration<double> timeInterval;
+
 	BOOL quit = FALSE;
 	SDL_Event* pEvent = pGame->system.GetEvent();
+
 	while (!quit)
 	{
-		Card_RenderPresent(pGame);
-		SDL_WaitEvent(pEvent);
-		//SDL_Log("%d", *pEvent);
-		switch (pEvent->type)
-		{
-		case SDL_QUIT:
-			quit = TRUE;
-			break;
+		nowTimePoint = std::chrono::steady_clock::now();
+		timeInterval = nowTimePoint - beforeTimePoint;
 
-		case SDL_KEYDOWN:
-			switch (pEvent->key.keysym.sym) {
-			case SDLK_F4:
-			case SDL_SCANCODE_F4:
-				//F4---full screen---ȫ��
-				if (SDL_GetWindowFlags(pGame->system.GetWindow()) & SDL_WINDOW_FULLSCREEN ||
-					SDL_GetWindowFlags(pGame->system.GetWindow()) & SDL_WINDOW_FULLSCREEN_DESKTOP ||
-					SDL_GetWindowFlags(pGame->system.GetWindow()) & SDL_WINDOW_BORDERLESS)
-				{
-					SDL_SetWindowBordered(pGame->system.GetWindow(), SDL_TRUE);
-					SDL_SetWindowResizable(pGame->system.GetWindow(), SDL_TRUE);
-					SDL_SetWindowSize(pGame->system.GetWindow(), pGame->windowSize.cx, pGame->windowSize.cy);
-					SDL_SetWindowPosition(pGame->system.GetWindow(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-				}
-				else {
-					SDL_SetWindowBordered(pGame->system.GetWindow(), SDL_FALSE);
-					SDL_Rect rectWindow;
-					SDL_GetDisplayBounds(0, &rectWindow);
-					SDL_SetWindowSize(pGame->system.GetWindow(), rectWindow.w, rectWindow.h);
-					SDL_SetWindowPosition(pGame->system.GetWindow(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-				}
+		if (timeInterval >= pGame->FPS.interval) {
+			beforeTimePoint = nowTimePoint;
+
+			SDL_PollEvent(pEvent);
+			Card_RenderPresent(pGame,nowTimePoint);
+			Card_GetEvent_Event = *pEvent;
+			//SDL_Log("%d", Card_GetEvent_Event);
+			switch (pEvent->type)
+			{
+			case SDL_QUIT:
+				quit = TRUE;
 				break;
+
+			case SDL_KEYDOWN:
+				switch (pEvent->key.keysym.sym) {
+				case SDLK_ESCAPE:case SDL_SCANCODE_ESCAPE:
+				case SDLK_F4:case SDL_SCANCODE_F4:
+					//F4---full screen---全屏
+					if (SDL_GetWindowFlags(pGame->system.GetWindow()) & SDL_WINDOW_FULLSCREEN ||
+						SDL_GetWindowFlags(pGame->system.GetWindow()) & SDL_WINDOW_FULLSCREEN_DESKTOP ||
+						SDL_GetWindowFlags(pGame->system.GetWindow()) & SDL_WINDOW_BORDERLESS)
+					{
+						SDL_SetWindowBordered(pGame->system.GetWindow(), SDL_TRUE);
+						SDL_SetWindowResizable(pGame->system.GetWindow(), SDL_TRUE);
+						SDL_SetWindowSize(pGame->system.GetWindow(), pGame->windowSize.cx, pGame->windowSize.cy);
+						SDL_SetWindowPosition(pGame->system.GetWindow(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+					}
+					else {
+						if (pEvent->key.keysym.sym == SDLK_F4 || pEvent->key.keysym.sym == SDL_SCANCODE_F4) {
+							SDL_SetWindowBordered(pGame->system.GetWindow(), SDL_FALSE);
+							SDL_Rect rectWindow;
+							SDL_GetDisplayBounds(0, &rectWindow);
+							SDL_SetWindowSize(pGame->system.GetWindow(), rectWindow.w, rectWindow.h);
+							SDL_SetWindowPosition(pGame->system.GetWindow(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+						}
+					}
+					break;
+				}
 			}
 		}
 	}
-	SDL_Log("sss");
 }
 
 void Card_Run(GameModule* pGame)
@@ -95,94 +178,239 @@ void Card_Run(GameModule* pGame)
 	//));*/
 	Card_HandleEvent(pGame);
 }
-//thread threadSystem(Card_Run);
 
 void Card_HandleError(){}
 
 
-/*-------ͼƬ-------*/
-void Card_LoadImage(const char* filePath, const char* fileName)
-{
-	SDL_Surface* pSurface = IMG_Load(filePath);
-	static Image image(pSurface);
-	
-	image.imageName = fileName;
-	image.imageRect.w = pSurface->w;
-	image.imageRect.h = pSurface->h;
-	image.imageRect.x = image.imageRect.y = 0;
-
-	//�洢��Դ��Ϣ
-	static ResourcesModule resourcesThis;
-	resourcesThis.object = &image;
-	resourcesThis.kind = _Image;
-	Resources[fileName] = &resourcesThis;
-
-}
-
-
-//��ͼƬ������Ⱦ��
-void Card_PresentImage(GameModule* pGame,const char* fileName)
-{
-	//mutex tmpMutex;
-	//tmpMutex.lock();
-	Image* image = (Image*)Resources[fileName]->object;
-	static RenderObject renderThis;
-
-	renderThis.pRect = &(image->imageRect);
-	renderThis.pSurface = image->GetSurface();
-	//renderThis.pTexture = SDL_CreateTextureFromSurface(pGame->system.GetRenderer(), image->GetSurface());
-	SDL_SetTextureAlphaMod(renderThis.pTexture, image->imageAlpha);
-
-	renderedTexture[fileName] = &renderThis;
-	//tmpMutex.unlock();
-}
-
-
-/*-------��Ⱦ-------*/
-void Card_RenderPresent(GameModule* pGame)
+/*-------渲染-------*/
+void Card_RenderPresent(GameModule* pGame, const std::chrono::steady_clock::time_point& nowTimePoint)
 {
 	SDL_Renderer* pRender = pGame->system.GetRenderer();
+	
 	SDL_RenderClear(pRender);
 	SDL_SetRenderDrawColor(pRender, 25, 64, 82, 255);
-	for (auto renderedThis : renderedTexture) {
-		if (renderedThis.second->pTexture == NULL) {
-			renderedThis.second->pTexture = SDL_CreateTextureFromSurface(pGame->system.GetRenderer(), renderedThis.second->pSurface);
+
+	
+	for (auto& renderedThis : renderedTexture) {
+
+		//创建纹理
+		if (renderedThis.second->renderInfo[renderedThis.second->animationName].vectorTexture.size() == 0) {
+			SDL_Texture* pTexture;
+			for (auto& usedSurface : *(renderedThis.second->renderInfo[renderedThis.second->animationName].vectorSurface)) {
+				pTexture = SDL_CreateTextureFromSurface(pRender, usedSurface);
+				renderedThis.second->renderInfo[renderedThis.second->animationName].vectorTexture.push_back(pTexture);
+			}
 		}
-		SDL_RenderSetViewport(pRender,renderedThis.second->pRect);
-		SDL_RenderCopy(pRender, renderedThis.second->pTexture, NULL, NULL);
+		
+		/*动画*/
+		if (nowTimePoint - renderedThis.second->beforeTimePoint >= renderedThis.second->intervalTime) {
+			renderedThis.second->indexTexture++;
+			renderedThis.second->beforeTimePoint = nowTimePoint;
+		}
+		if (renderedThis.second->indexTexture >= renderedThis.second->renderInfo[renderedThis.second->animationName].vectorTexture.size()) {
+			//防止数组越界
+			renderedThis.second->indexTexture = 0;
+		}
+
+
+		//大小
+		SDL_Rect tmpRect;
+		tmpRect.w = (*renderedThis.second->renderInfo[renderedThis.second->animationName].vectorSurface)
+						[renderedThis.second->indexTexture]->w * renderedThis.second->scale;
+		tmpRect.h = (*renderedThis.second->renderInfo[renderedThis.second->animationName].vectorSurface)
+						[renderedThis.second->indexTexture]->h * renderedThis.second->scale;
+
+		//坐标基准点
+		switch (renderedThis.second->datumPoint)
+		{
+		case _Card_DatumPoint_UpperLeft:
+			tmpRect.x = renderedThis.second->rect.x;
+			tmpRect.y = renderedThis.second->rect.y;
+			break;
+
+		case _Card_DatumPoint_BottomLeft:
+			tmpRect.x = renderedThis.second->rect.x;
+			tmpRect.y = renderedThis.second->rect.y -
+				(double)((*renderedThis.second->renderInfo[renderedThis.second->animationName].vectorSurface)
+					[renderedThis.second->indexTexture]->h - renderedThis.second->rect.h)
+				* renderedThis.second->scale;
+			break;
+		}
+
+		SDL_SetTextureAlphaMod(renderedThis.second->renderInfo[renderedThis.second->animationName].vectorTexture[renderedThis.second->indexTexture]
+			, renderedThis.second->alpha);
+
+		SDL_RenderCopyEx(pRender, renderedThis.second->renderInfo[renderedThis.second->animationName].vectorTexture[renderedThis.second->indexTexture]
+			, NULL, &tmpRect, NULL, NULL, renderedThis.second->imageFlip);
+
 	}
 	
 	SDL_RenderPresent(pRender);
 }
 
 
-//������������
-void Card_MoveObject(const char*fileName, int x, int y)
+/*-------图片-------*/
+
+Image* Card_LoadImage(const char* filePath, const char* fileName)
 {
-	const char* objectKind = Resources[fileName]->kind;
-	if (objectKind == _Image) {
-		renderedTexture[fileName]->pRect->x = x;
-		renderedTexture[fileName]->pRect->y = y;
+	SDL_Surface* pSurface = IMG_Load(filePath);
+	
+	if (!Resources[fileName]) {
+		Image* image = new Image();
+
+		image->vectorSurface.push_back(pSurface);
+		image->name = fileName;
+
+		//载入资源
+		ResourcesModule* resourcesThis = new ResourcesModule();
+		resourcesThis->object = image;
+		resourcesThis->kind = _Card_GameObject;
+		Resources[fileName] = resourcesThis;
+	}
+	else {
+		Image* image = (Image*)(Resources[fileName]->object);
+		image->vectorSurface.push_back(pSurface);
+	}
+
+	return (Image*)(Resources[fileName]->object);
+}
+
+
+//设置图片属性
+void Card_SetAlphaImage(const char* fileName, int alpha)
+{
+	int objectKind = Resources[fileName]->kind;
+	if (objectKind == _Card_GameObject) {
+		renderedTexture[fileName]->alpha = alpha;
+	}
+}
+
+void Card_SetSpeedAnimation(const char* fileName, double speed)
+{
+	int objectKind = Resources[fileName]->kind;
+	if (objectKind == _Card_GameObject) {
+		for (auto& animation : renderedTexture[fileName]->renderInfo) { //更改该物体所有动画的速度
+			renderedTexture[fileName]->intervalTime = (std::chrono::duration<double>)((1 / speed) / animation.second.vectorSurface->size());
+		}
+	}
+}
+void Card_ChooseAnimation(const char* fileName, const char* animationName, SDL_RendererFlip rendererFlip)
+{
+	int objectKind = Resources[fileName]->kind;
+	if (objectKind == _Card_GameObject) {
+		renderedTexture[fileName]->animationName = animationName;
+		renderedTexture[fileName]->imageFlip = rendererFlip;
+	}
+}
+
+
+
+
+/*-------渲染-------*/
+
+//void Card_PresentGameObject(Image* image)//暂停使用
+//{
+//	RenderObject* renderThis=new RenderObject();
+//
+//	renderThis->rect = (image->rect);
+//	renderThis->vectorSurface = &image->vectorSurface;
+//	renderThis->intervalTime = (std::chrono::duration<double>)((1 / image->animationSpeed) / image->vectorSurface.size());
+//
+//	renderedTexture[image->name] = renderThis;
+//}/*-----------------------------------暂停使用*/
+void Card_LoadGameObject(const char* name)
+{
+	if (!Resources[name]) {
+		GameObject* pGame = new GameObject();
+		ResourcesModule* resourcesThis = new ResourcesModule();
+		resourcesThis->object = pGame;
+		resourcesThis->kind = _Card_GameObject;
+		Resources[name] = resourcesThis;
+	}
+}
+
+void Card_GameObjectAddImage(const char* gameObjectName, const char* imageName)
+{
+	GameObject* pGame = (GameObject*)Resources[gameObjectName]->object;
+	Image* image = (Image*)Resources[imageName]->object;
+
+	image->gameObjectName = gameObjectName;
+
+	pGame->name = gameObjectName;
+	pGame->images[image->name] = image;
+}
+
+void Card_PresentGameObject(const char* fileName)
+{
+	GameObject* pGame = (GameObject*)Resources[fileName]->object;
+
+	pGame->rect.w = (*(*pGame->images.begin()).second->vectorSurface.begin())->w;
+	pGame->rect.h = (*(*pGame->images.begin()).second->vectorSurface.begin())->h;
+
+	if (!renderedTexture[pGame->name]) { //显示物体前已经完成动画添加
+		RenderObject* renderThis=new RenderObject();
+
+		renderThis->rect = pGame->rect;
+		renderThis->scale = pGame->scale;
+		renderThis->datumPoint = pGame->datumPoint;
+
+		for (auto& image : pGame->images) {
+			renderThis->renderInfo[image.second->name].vectorSurface = &image.second->vectorSurface;
+			renderThis->animationName = image.second->name;
+			renderThis->intervalTime = (std::chrono::duration<double>)((1 / image.second->animationSpeed) / image.second->vectorSurface.size());
+		}
+		renderedTexture[pGame->name] = renderThis;
+	}
+	else {// un-finished
+		auto& renderThis = renderedTexture[pGame->name];
+	}
+}
+
+
+//设置游戏组件属性
+void Card_SetPositionObject(const char*fileName, int x, int y)
+{
+	int objectKind = Resources[fileName]->kind;
+	if (objectKind == _Card_GameObject) {
+		renderedTexture[fileName]->rect.x = x;
+		renderedTexture[fileName]->rect.y = y;
 	}
 }
 
 void Card_SetSizeObject(const char* fileName, int w, int h)
 {
-	const char* objectKind = Resources[fileName]->kind;
-	if (objectKind == _Image) {
-		renderedTexture[fileName]->pRect->w = w;
-		renderedTexture[fileName]->pRect->h = h;
+	int objectKind = Resources[fileName]->kind;
+	if (objectKind == _Card_GameObject) {
+		renderedTexture[fileName]->rect.w = w;
+		renderedTexture[fileName]->rect.h = h;
+	}
+}
+void Card_SetSizeObject(const char* fileName, double scale)
+{
+	int objectKind = Resources[fileName]->kind;
+	if (objectKind == _Card_GameObject) {
+		renderedTexture[fileName]->scale = scale;
+	}
+}
+void Card_SetDatumPointObject(const char* fileName,int datumPointChoice)
+{
+	int objectKind = Resources[fileName]->kind;
+	if (objectKind == _Card_GameObject) {
+		renderedTexture[fileName]->datumPoint = datumPointChoice;
 	}
 }
 
 
 
 
-/*-------User Module�û�ģ��-------*/
+
+
+
+/*-------User Module用户模块-------*/
 void Card_SetTitle(GameModule* pGame, const char* pTitle)
 {
-	SDL_SetWindowTitle(pGame->system.GetWindow(), ((string)pTitle+_CardEngine).c_str());
-	pGame->title = ((string)pTitle+_CardEngine).c_str();
+	SDL_SetWindowTitle(pGame->system.GetWindow(), ((string)pTitle+_Card_CardEngine).c_str());
+	pGame->title = ((string)pTitle+_Card_CardEngine).c_str();
 }
 
 void Card_SetWindowSize(GameModule* pGame, SIZE* size)

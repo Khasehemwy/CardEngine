@@ -1,101 +1,158 @@
 #pragma once
 
-
-class Image;
-class Text;
+class GameModule;
 class SystemModule;
 class UserModule;
-class GameModule;
-class RenderObject;
 class ResourcesModule;
+class Text;
+class FPS;
+class RenderObject;
+class GameObject;
+class Image;
 
-static map<const char*, ResourcesModule*>Resources;
-static map<const char*, RenderObject*>renderedTexture;
 
 
+//ç”¨äºå­˜å‚¨èµ„æº
 class ResourcesModule
 {
 public:
 	void* object;
-	const char* kind;
+	int kind;
+};
+
+//ç”¨äºå­˜å‚¨æ¸²æŸ“çš„ç‰©ä½“
+class RenderInfo
+{
+public:
+	vector<SDL_Surface*>* vectorSurface;
+	vector<SDL_Texture*> vectorTexture;
 };
 
 class RenderObject
 {
 public:
-	SDL_Surface* pSurface;
-	SDL_Texture* pTexture;
-	SDL_Rect* pRect;
+	map < const char*, RenderInfo > renderInfo;
+	SDL_Rect rect;
+	int datumPoint;
+	double scale;
+
+	int alpha;						//å›¾ç‰‡é€æ˜åº¦
+	const char* animationName;		//é€‰æ‹©è¿›è¡Œæ¸²æŸ“çš„åŠ¨ç”»
+	SDL_RendererFlip imageFlip;		//æ˜¯å¦ç¿»è½¬å›¾ç‰‡
+
+	//åŠ¨ç”»
+	std::chrono::steady_clock::time_point beforeTimePoint;
+	unsigned int indexTexture;									//ä¸¤ä¸ªæ¸²æŸ“é—´çš„é—´éš”æ—¶é—´
+	std::chrono::duration<double> intervalTime;
+
+	RenderObject();
 };
 
-//Í¼ÏñÄ£¿é£¬äÖÈ¾Í¼Æ¬
+
+//æ¸¸æˆç»„ä»¶
+class GameObject
+{
+public:
+	const char* name;				//åå­—
+	SDL_Rect rect;					//å¤§å°å’Œä½ç½®
+	double scale;					//ç¼©æ”¾ç¨‹åº¦
+	int datumPoint;					//åæ ‡åŸºå‡†ç‚¹
+
+	map<const char*, Image*> images;
+
+	GameObject();
+	GameObject(const char* name);
+
+	void Present();
+	void AddImage(Image& image);
+
+	void SetSize(int w, int h);
+	void SetSize(double scale);
+	void SetPosition(int x, int y);
+	void SetDatumPoint(int datumPointChoice);
+
+	void SetImageAlpha(int alpha);
+	void SetAnimationSpeed(double speed);
+	void ChooseAnimation(Image& animation, SDL_RendererFlip rendererFlip = SDL_FLIP_NONE);
+};
+
+//å›¾ç‰‡
 class Image
 {
-private:
-	SDL_Surface* imageSurface;
-public:	
-	string imageName;				//Í¼Æ¬ÎÄ¼şÃû³Æ
-	SDL_Rect imageRect;				//Í¼Æ¬Î»ÖÃºÍ´óĞ¡
-	unsigned int imageAlpha;		//Í¼Æ¬Í¸Ã÷¶È
+public:
+	const char* name;
+	const char* gameObjectName;
 
-	Image(SDL_Surface*);
+	vector<SDL_Surface*> vectorSurface;
 
-	SDL_Surface* GetSurface();
+	unsigned int imageAlpha;		//å›¾ç‰‡é€æ˜åº¦
+	double animationSpeed;
+
+
+	Image();
+	Image(const char* name);
+
+	void Load(const char* filePath);
+
+	void SetAlpha(int alpha);
+	void SetAnimationSpeed(double speed);
 };
 
-
-//ÎÄ±¾Ä£¿é£¬äÖÈ¾ÎÄ×Ö
+//æ–‡å­—
 class Text :public Image
 {
 public:
-	const char* fontName;			//×ÖÌåÎÄ¼şÃû³Æ
-	SDL_Rect fontRect;				//ÎÄ×ÖÎ»ÖÃºÍ´óĞ¡
-	unsigned int fontAlpha;			//ÎÄ×ÖÍ¸Ã÷¶È
+	const char* fontName;			//å­—ä½“åç§°
+	SDL_Rect fontRect;				//å­—ä½“ä½ç½®å’Œå¤§å°
+	unsigned int fontAlpha;			//å­—ä½“é€æ˜åº¦
+
+	Text();
 };
 
 
-//FPSÄ£¿é
+//FPSæ¨¡å—
 class FPS :public Text
 {
 public:
-	unsigned int value;				//FPSÊıÖµ
+	unsigned int value;				//FPSå¤§å°
+	std::chrono::duration<double> interval;
+
+	FPS();
 };
 
 
-//ÏµÍ³Ä£¿é£¬ÓÃ»§²»»á½øĞĞ¸ü¸Ä
+
+//ç³»ç»Ÿæ¨¡å—ï¼Œä½¿ç”¨å¼•æ“æ—¶ä¸åº”æ¥è§¦
 class SystemModule
 {
 private:
-	HINSTANCE hInstance;			//Ó¦ÓÃÊµÀı¾ä±ú
-	SDL_Window* pWindow;			//´°¿ÚÖ¸Õë
-	SDL_Renderer* pRenderer;		//äÖÈ¾Ö¸Õë
-	SDL_Renderer* pRendererForRun;
-	TTF_Font* pDefaultFont;			//Ä¬ÈÏ×ÖÌåÖ¸Õë
+	HINSTANCE hInstance;			//çª—å£å¥æŸ„
+	SDL_Window* pWindow;			//çª—å£
+	SDL_Renderer* pRenderer;		//æ¸²æŸ“å™¨
+	TTF_Font* pDefaultFont;			//é»˜è®¤å­—ä½“
 	SDL_Event event;
 
 public:
 	SystemModule();
 
-	int SetWindow(SDL_Window*);
-	int SetRenderer(SDL_Renderer*);
-	int SetRendererForRun(SDL_Renderer*);
-	int SetFont(TTF_Font*);
+	int SetWindow(SDL_Window* pWin);
+	int SetRenderer(SDL_Renderer* pRenderer);
+	int SetFont(TTF_Font* pFont);
 	SDL_Window* GetWindow();
-	SDL_Renderer* GetRendererForRun();
 	SDL_Renderer* GetRenderer();
 	TTF_Font* GetDefaultFont();
 	SDL_Event* GetEvent();
 };
 
 
-//ÓÃ»§Ä£¿é£¬¸ù¾İ²»Í¬Éè¶¨½øĞĞ¸ü¸Ä
+//ç”¨æˆ·ç»„ä»¶ï¼Œå¯éšæ„è®¾ç½®
 class UserModule
 {
 public:
-	const char* title;				//´°¿Ú±êÌâ
-	SIZE windowSize;				//´°¿Ú´óĞ¡
-	//FPS FPS;						//FPSÖ¡ÂÊ
-	//BOOL showFPS;					//ÊÇ·ñÏÔÊ¾FPS
+	const char* title;				//çª—å£æ ‡é¢˜
+	SIZE windowSize;				//çª—å£å¤§å°
+	FPS FPS;						//FPS
+	//BOOL showFPS;					//æ˜¯å¦æ˜¾ç¤ºFPS
 
 	UserModule();
 };
@@ -105,5 +162,6 @@ class GameModule :public UserModule
 {
 public:
 	SystemModule system;
-	//UserModule user;
+
+	GameModule();
 };
