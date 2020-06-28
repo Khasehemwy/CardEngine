@@ -1,81 +1,55 @@
-#include"includes.h"
+#include"CardEngine.h"
 
+Image fireworks_image("fireworks_image");
+GameObject fireworks("fireworks");
 
 SDL_Event* pEvent;
 
-Image nier1("nier1");
-
-GameObject char1("char1");
-Image char1_idle("char1_idle");
-Image char1_walk("char1_walk");
-
-SDL_RendererFlip flip;
-
-void Move()
+int jug = 0;
+void Card_Update(EngineModule* pGame)
 {
-
-	if (pEvent->type == SDL_KEYDOWN) {
-		switch (pEvent->key.keysym.sym)
-		{
-		case SDLK_RIGHT: 
-			char1.ChooseAnimation(char1_walk);
-			flip = SDL_FLIP_NONE;
-			char1.SetPosition(char1.rect.x + 10, char1.rect.y);
-			break;
-		case SDLK_LEFT:
-			char1.ChooseAnimation(char1_walk, SDL_FLIP_HORIZONTAL);
-			flip = SDL_FLIP_HORIZONTAL;
-			char1.SetPosition(char1.rect.x - 10, char1.rect.y);
-			break;
-		}
+	if (pEvent->type == SDL_MOUSEBUTTONDOWN && jug == 0) {
+		//fireworks.Present();
+		fireworks.SetPosition(pEvent->button.x - fireworks.rect.w / 2, pEvent->button.y - fireworks.rect.h / 2);
+		fireworks.SetAnimationReplay(fireworks_image);
+		fireworks.SetImageAlpha(255);
+		jug = 1;
 	}
-	else {
-		char1.ChooseAnimation(char1_idle, flip);
+	else if (pEvent->type == SDL_MOUSEBUTTONUP) { jug = 0; }
+	if (fireworks.GetAnimationEndState(fireworks_image) == TRUE) {
+		fireworks.SetImageAlpha(0);
 	}
 }
 
-
-void Card_Update(GameModule* pGame)
+void Card_Start(EngineModule* pGame)
 {
-	Move();
-}
-
-
-void Card_Start(GameModule* pGame)
-{
+	Card_SetTitle(pGame, "Fireworks");
 	pEvent = Card_GetEvent();
-	Card_SetTitle(pGame, "Test");
 
-	nier1.Load("resources\\NieRAutomata1.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_000.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_001.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_002.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_003.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_004.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_005.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_006.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_007.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_008.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_009.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_010.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_011.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_012.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_013.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_014.png");
+	fireworks_image.Load("resources\\fireworks\\tx_yanhua_015.png");
 
-	char1_idle.Load("resources\\char\\PixelCharAnim_Plain_idle1.png");
-	char1_idle.Load("resources\\char\\PixelCharAnim_Plain_idle2.png");
-	char1_idle.Load("resources\\char\\PixelCharAnim_Plain_idle3.png");
-	char1_idle.Load("resources\\char\\PixelCharAnim_Plain_idle4.png");
+	fireworks.AddImage(fireworks_image);
+	fireworks.Present();
 
-	char1_walk.Load("Resources\\Char\\run\\PixelCharAnim_Plain_run1.png");
-	char1_walk.Load("Resources\\Char\\run\\PixelCharAnim_Plain_run2.png");
-	char1_walk.Load("Resources\\Char\\run\\PixelCharAnim_Plain_run3.png");
-	char1_walk.Load("Resources\\Char\\run\\PixelCharAnim_Plain_run4.png");
-	char1_walk.Load("Resources\\Char\\run\\PixelCharAnim_Plain_run5.png");
-	char1_walk.Load("Resources\\Char\\run\\PixelCharAnim_Plain_run6.png");
-
-	char1.AddImage(char1_idle);
-	char1.AddImage(char1_walk);
-	char1.Present();
-	//nier1.Present();
-
-
-	
-	char1.SetSize(10);
-	char1.SetPosition(100, 100);
-	char1.SetDatumPoint(_Card_DatumPoint_BottomLeft);
-	char1.SetAnimationSpeed(2);
-	char1.SetImageAlpha(100);
-
+	fireworks.SetImageAlpha(0);
+	fireworks.SetDatumPoint(_Card_DatumPoint_Center);
+	fireworks.SetPosition(300, 300);
+	fireworks.SetAnimationSpeed(1.4);
+	fireworks.SetSize(1);
+	fireworks.SetAnimationLoop(fireworks_image, FALSE);
 }
-
-
-
-
-
